@@ -40,28 +40,58 @@ namespace fileImporter.Utils.ConsoleConversation
             this._userChoice = Converters.GetValueFromDescription<UserChoices>(choice);
         }
 
-        public void ExecuteChoice()
+        public async Task ExecuteChoice()
         {
             switch (this._userChoice)
             {
                 case UserChoices.CustomerListing:
-                    CustomerListing(true);
+                    CustomerListing();
                     break;
                 case UserChoices.RegisterNewCustomer:
-                    RegisterNewCustomer();
+                    await RegisterNewCustomer();
+                    break;
+                case UserChoices.DeleteAllCustomers:
+                    await DeleteAllCustomers();
+                    break;
+                case UserChoices.ClearHistory:
+                    ClearHistory();
                     break;
             }
         }
 
-        private void CustomerListing(bool clearConsole, int? customerID = null)
+        private void ClearHistory()
+        {
+            AnsiConsole.Clear();
+        }
+
+        private async Task DeleteAllCustomers()
+        {
+            if (!AnsiConsole.Confirm("Are you sure you want to delete all customers?").ToString().ToUpper().Equals("S"))
+            {
+                await AnsiConsole.Progress()
+                    .StartAsync(async ctx => 
+                    {
+                        var task1 = ctx.AddTask("[red]deleting all customers...[/]");
+                        var task2 = _customer.RemoveAllAsync();
+
+                        while(!ctx.IsFinished) 
+                        {
+                            await task2;
+                            await Task.Delay(6);
+
+                            // Increment
+                            task1.Increment(1.5);
+                        }
+                });
+            }
+        }
+
+        private void CustomerListing(int? customerID = null)
         {
             var customers = this._customer
                 .GetAllAsync()
                 .GetAwaiter()
                 .GetResult();
-
-            if (clearConsole)
-                AnsiConsole.Clear();
 
             this.BuildTable(customers, customerID);
         }
@@ -97,7 +127,7 @@ namespace fileImporter.Utils.ConsoleConversation
             AnsiConsole.Write(table);
         }
 
-        private void RegisterNewCustomer()
+        private async Task RegisterNewCustomer()
         {
             var rule = new Rule("[red]Register a New Customer[/]");
             rule.LeftJustified();
@@ -112,14 +142,35 @@ namespace fileImporter.Utils.ConsoleConversation
                 City = AnsiConsole.Ask<string>("[green]CITY[/]:")
             };
 
-            Customer customer = _customer.SaveAsync(customerDTO).GetAwaiter().GetResult();
+            Customer? customer = null;
+
+            await AnsiConsole.Progress()
+                .StartAsync(async ctx => 
+                {
+                    var task1 = ctx.AddTask("[yellow]Registering New Customer...[/]");
+
+                    var task2 = _customer
+                            .SaveAsync(customerDTO);
+
+                    while(!ctx.IsFinished) 
+                    {
+                        await Task.Delay(5);
+                        await task2;
+
+                         // Increment
+                        task1.Increment(1.5);
+                    }
+
+                    customer = task2.Result;
+            });
+            
 
             var panel = new Panel("[green]Customer Created Successfully[/]");
             panel.Border = BoxBorder.Rounded;
 
             AnsiConsole.Write(panel);
 
-            CustomerListing(false, customer.ID);
+            CustomerListing(customer?.ID);
         }
 
         private string BuildTableCell(string valor, string colorStr = null) 

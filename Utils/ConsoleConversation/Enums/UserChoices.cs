@@ -15,6 +15,8 @@ namespace fileImporter.Utils.ConsoleConversation.Enums
         [Description("Delete Customer")]
         DeleteCustomer = 5,
         [Description("Delete All Customers")]
-        DeleteAllCustomers = 6
+        DeleteAllCustomers = 6,
+        [Description("Clear History")]
+        ClearHistory = 7
     }
 }

@@ -14,5 +14,6 @@ namespace fileImporter.Interfaces
         Task<Customer> SaveAsync(CustomerDTO customer); 
         Task SaveRangeAsync(List<Customer> customers); 
         void RemoveAsync(); 
+        Task RemoveAllAsync(); 
     }
 }

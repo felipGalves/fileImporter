@@ -62,5 +62,11 @@ namespace fileImporter.Repositories
             this._context.AddRange(customers);
             await this._context.SaveChangesAsync();
         }
+
+        public async Task RemoveAllAsync()
+        {
+            this._context.RemoveRange(await this.GetAllAsync());
+            this._context.SaveChanges();
+        }
     }
 }

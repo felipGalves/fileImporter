@@ -9,7 +9,7 @@ namespace fileImporter
 {
     public static class Program
     {
-        public static void Main()
+        public async static Task Main()
         {
             using (var db = new FileImporterContext())
             {
@@ -21,7 +21,7 @@ namespace fileImporter
 
                 do {
                     consoleConversation.ShowMenuOptions();
-                    consoleConversation.ExecuteChoice();
+                    await consoleConversation.ExecuteChoice();
                 } while (true);
             }
         }
