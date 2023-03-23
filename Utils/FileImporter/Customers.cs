@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using fileImporter.Data;
+using fileImporter.Error;
 using fileImporter.Interfaces;
 using fileImporter.Models;
 using fileImporter.Repositories;
@@ -20,7 +21,7 @@ namespace fileImporter.Utils.FileImporter
             this._directory = directory;
         }
 
-        public async void ImportCustomers()
+        public async Task ImportCustomers()
 
         {
             // Abre a planilha criada
@@ -86,75 +87,89 @@ namespace fileImporter.Utils.FileImporter
                     }
                 }
 
-                if (customers.Any()) 
+                if (customers.Any())
                     await customerRepository.SaveRangeAsync(customers);
             }
         }
 
 
-        public void ExportCustomers()
+        public async Task ExportCustomers()
         {
-            var customers = new List<Customer>
+            List<Customer>? customers = null;
+
+            try
             {
-                new Customer() { ID = 1, Name = "teste", Address = "teste", City = "teste", Email = "teste", Phone=123  }
-            };
+                using (var db = new FileImporterContext())
+                {
+                    var customerRepository = new CustomerRepository(db);
 
-            // Define a licença
-            // Cria instância do ExcelPackage 
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            ExcelPackage excel = new ExcelPackage();
+                    customers = await customerRepository.GetAllAsync();
+                }
 
-            // Nome da planilha
-            var workSheet = excel.Workbook.Worksheets.Add("PlanilhaClientes");
+                if (customers.Count <= 0)
+                    throw new ConsoleException("No registered clients");
 
-            // Define propriedades da planilha
-            workSheet.TabColor = System.Drawing.Color.Black;
-            workSheet.DefaultRowHeight = 12;
+                // Define a licença
+                // Cria instância do ExcelPackage 
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                ExcelPackage excel = new ExcelPackage();
 
-            // Define propriedades da primeira linha
-            workSheet.Row(1).Height = 20;
-            workSheet.Row(1).Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-            workSheet.Row(1).Style.Font.Bold = true;
+                // Nome da planilha
+                var workSheet = excel.Workbook.Worksheets.Add("PlanilhaClientes");
 
-            // Define o cabeçalho da planilha(base 1)
-            workSheet.Cells[1, 1].Value = "Cod.";
-            workSheet.Cells[1, 2].Value = "Name";
-            workSheet.Cells[1, 3].Value = "Address";
-            workSheet.Cells[1, 4].Value = "Email";
-            workSheet.Cells[1, 5].Value = "Phone";
-            workSheet.Cells[1, 6].Value = "City";
+                // Define propriedades da planilha
+                workSheet.TabColor = System.Drawing.Color.Black;
+                workSheet.DefaultRowHeight = 12;
 
-            int index = 2;
-            foreach (var customer in customers)
-            {
-                workSheet.Cells[index, 1].Value = customer.ID;
-                workSheet.Cells[index, 2].Value = customer.Name;
-                workSheet.Cells[index, 3].Value = customer.Address;
-                workSheet.Cells[index, 4].Value = customer.Email;
-                workSheet.Cells[index, 5].Value = customer.Phone;
-                workSheet.Cells[index, 6].Value = customer.City;
-                index++;
+                // Define propriedades da primeira linha
+                workSheet.Row(1).Height = 20;
+                workSheet.Row(1).Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                workSheet.Row(1).Style.Font.Bold = true;
+
+                // Define o cabeçalho da planilha(base 1)
+                workSheet.Cells[1, 1].Value = "Cod.";
+                workSheet.Cells[1, 2].Value = "Name";
+                workSheet.Cells[1, 3].Value = "Address";
+                workSheet.Cells[1, 4].Value = "Email";
+                workSheet.Cells[1, 5].Value = "Phone";
+                workSheet.Cells[1, 6].Value = "City";
+
+                int index = 2;
+                foreach (var customer in customers)
+                {
+                    workSheet.Cells[index, 1].Value = customer.ID;
+                    workSheet.Cells[index, 2].Value = customer.Name;
+                    workSheet.Cells[index, 3].Value = customer.Address;
+                    workSheet.Cells[index, 4].Value = customer.Email;
+                    workSheet.Cells[index, 5].Value = customer.Phone;
+                    workSheet.Cells[index, 6].Value = customer.City;
+                    index++;
+                }
+
+                // Ajusta o tamanho da coluna
+                workSheet.Column(1).AutoFit();
+                workSheet.Column(2).AutoFit();
+                workSheet.Column(3).AutoFit();
+
+                // Se o arquivo existir exclui
+                if (File.Exists(_directory))
+                    File.Delete(_directory);
+
+                // Cria o arquivo excel no disco fisico
+                FileStream objFileStrm = File.Create(_directory);
+                objFileStrm.Close();
+
+                // Escreve o conteudo para o arquivo excel
+                File.WriteAllBytes(_directory, excel.GetAsByteArray());
+
+                //Fecha o arquivo excel
+                excel.Dispose();
+                Console.WriteLine($"Planilha criada com sucesso em : {_directory}\n");
             }
-
-            // Ajusta o tamanho da coluna
-            workSheet.Column(1).AutoFit();
-            workSheet.Column(2).AutoFit();
-            workSheet.Column(3).AutoFit();
-
-            // Se o arquivo existir exclui
-            if (File.Exists(_directory))
-                File.Delete(_directory);
-
-            // Cria o arquivo excel no disco fisico
-            FileStream objFileStrm = File.Create(_directory);
-            objFileStrm.Close();
-
-            // Escreve o conteudo para o arquivo excel
-            File.WriteAllBytes(_directory, excel.GetAsByteArray());
-
-            //Fecha o arquivo excel
-            excel.Dispose();
-            Console.WriteLine($"Planilha criada com sucesso em : {_directory}\n");
+            catch (Exception ex) 
+            {
+                throw new ConsoleException(ex.Message);
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ using fileImporter.Models;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using LinqKit;
 
 namespace fileImporter.Repositories
 {
@@ -26,12 +27,12 @@ namespace fileImporter.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<List<Customer>> GetAllAsync()
+        public async Task<List<Customer>> GetAllAsync()
         {
-            return this._context.Customers.ToListAsync();
+            return await this._context.Customers.ToListAsync();
         }
 
-        public void RemoveAsync()
+        public async Task RemoveAsync(CustomerFilterDTO customerFilterDTO)
         {
             throw new NotImplementedException();
         }

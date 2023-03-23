@@ -7,7 +7,10 @@ using fileImporter.Interfaces;
 using fileImporter.Models;
 using fileImporter.Repositories;
 using fileImporter.Utils.ConsoleConversation.Enums;
+using fileImporter.Utils;
 using Spectre.Console;
+using fileImporter.Error;
+using System.IO;
 
 namespace fileImporter.Utils.ConsoleConversation
 {
@@ -50,6 +53,15 @@ namespace fileImporter.Utils.ConsoleConversation
                 case UserChoices.RegisterNewCustomer:
                     await RegisterNewCustomer();
                     break;
+                case UserChoices.ImportCustomers:
+                    await ImportCustomers();
+                    break;
+                case UserChoices.ExportCustomers:
+                    await ExportCustomers();
+                    break;
+                case UserChoices.DeleteCustomer:
+                    DeleteCustomer();
+                    break;
                 case UserChoices.DeleteAllCustomers:
                     await DeleteAllCustomers();
                     break;
@@ -57,6 +69,84 @@ namespace fileImporter.Utils.ConsoleConversation
                     ClearHistory();
                     break;
             }
+        }
+
+        private async Task ExportCustomers()
+        {
+            var directory = Directory.GetCurrentDirectory();
+
+            var fileImporterCustomers = new FileImporter.Customers(Directory.GetCurrentDirectory() + "\\ExcelFiles.xls");
+            try
+            {
+                await fileImporterCustomers.ExportCustomers();
+            }
+            catch (ConsoleException consoleEx)
+            {
+                var panel = new Panel($"[red]{consoleEx.Message}[/]");
+                panel.Border = BoxBorder.Rounded;
+
+                AnsiConsole.Write(panel);
+            }
+        }
+
+        private async Task ImportCustomers()
+        {
+            if (!AnsiConsole.Confirm("Are you sure you want import all customers?").ToString().ToUpper().Equals("S"))
+            {
+                await AnsiConsole.Progress()
+                    .StartAsync(async ctx =>
+                    {
+                        var task1 = ctx.AddTask("[red]Importing customers...[/]");
+                        var fileImporterCustomers = new FileImporter.Customers(Directory.GetCurrentDirectory() + "\\ExcelFiles.xls");
+
+                        var task2 = fileImporterCustomers.ImportCustomers();
+
+                        while (!ctx.IsFinished)
+                        {
+                            await task2;
+                            await Task.Delay(6);
+
+                            // Increment
+                            task1.Increment(1.5);
+                        }
+                    });
+
+                var panel = new Panel("[green]Successfully imported customers[/]");
+                panel.Border = BoxBorder.Rounded;
+
+                AnsiConsole.Write(panel);
+
+                CustomerListing();
+            }
+        }
+
+        private void DeleteCustomer()
+        {
+            var rule = new Rule("[red]Find Customer to Delete by[/]");
+            rule.LeftJustified();
+            AnsiConsole.Write(rule);
+
+            var choice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .PageSize(10)
+                    .AddChoices(Converters.GetDescriptionsFromEnum<FiltersCustomer>())
+            );
+
+            var columnFilter = Converters.GetValueFromDescription<FiltersCustomer>(choice);
+
+            CustomerFilterDTO customerFilterDTO = new CustomerFilterDTO();
+
+            switch (columnFilter)
+            {
+                case FiltersCustomer.FindByCod:
+                    customerFilterDTO.ID = Converters.ToInt32(AnsiConsole.Ask<string>("[green]ID[/]:"));
+                    break;
+                case FiltersCustomer.FindByName:
+                    customerFilterDTO.Name = AnsiConsole.Ask<string>("[green]Name[/]:");
+                    break;
+            }
+
+
         }
 
         private void ClearHistory()
@@ -69,12 +159,12 @@ namespace fileImporter.Utils.ConsoleConversation
             if (!AnsiConsole.Confirm("Are you sure you want to delete all customers?").ToString().ToUpper().Equals("S"))
             {
                 await AnsiConsole.Progress()
-                    .StartAsync(async ctx => 
+                    .StartAsync(async ctx =>
                     {
                         var task1 = ctx.AddTask("[red]deleting all customers...[/]");
                         var task2 = _customer.RemoveAllAsync();
 
-                        while(!ctx.IsFinished) 
+                        while (!ctx.IsFinished)
                         {
                             await task2;
                             await Task.Delay(6);
@@ -82,7 +172,7 @@ namespace fileImporter.Utils.ConsoleConversation
                             // Increment
                             task1.Increment(1.5);
                         }
-                });
+                    });
             }
         }
 
@@ -145,25 +235,25 @@ namespace fileImporter.Utils.ConsoleConversation
             Customer? customer = null;
 
             await AnsiConsole.Progress()
-                .StartAsync(async ctx => 
+                .StartAsync(async ctx =>
                 {
                     var task1 = ctx.AddTask("[yellow]Registering New Customer...[/]");
 
                     var task2 = _customer
                             .SaveAsync(customerDTO);
 
-                    while(!ctx.IsFinished) 
+                    while (!ctx.IsFinished)
                     {
                         await Task.Delay(5);
                         await task2;
 
-                         // Increment
+                        // Increment
                         task1.Increment(1.5);
                     }
 
                     customer = task2.Result;
-            });
-            
+                });
+
 
             var panel = new Panel("[green]Customer Created Successfully[/]");
             panel.Border = BoxBorder.Rounded;
@@ -173,8 +263,8 @@ namespace fileImporter.Utils.ConsoleConversation
             CustomerListing(customer?.ID);
         }
 
-        private string BuildTableCell(string valor, string colorStr = null) 
-            =>  string.IsNullOrWhiteSpace(colorStr) ? valor : $"[{colorStr}]{valor}[/]";
+        private string BuildTableCell(string valor, string colorStr = null)
+            => string.IsNullOrWhiteSpace(colorStr) ? valor : $"[{colorStr}]{valor}[/]";
     }
 
 }
