@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using LinqKit;
+using fileImporter.Utils;
 
 namespace fileImporter.Repositories
 {
@@ -30,6 +31,41 @@ namespace fileImporter.Repositories
         public async Task<List<Customer>> GetAllAsync()
         {
             return await this._context.Customers.ToListAsync();
+        }
+
+        public async Task<List<Customer>> GetAllAsync(CustomerFieldsToFindDTO customerFieldsToFindDTO)
+        {
+            var predicate = PredicateBuilder.New<Customer>();
+
+            if (Converters.ToInt32(customerFieldsToFindDTO?.ID) != 0)
+                predicate = predicate
+                    .And(x 
+                        => EF.Functions.Like(x.ID.ToString(), 
+                        customerFieldsToFindDTO.ID.ToString()
+                    ));
+
+            if (!string.IsNullOrWhiteSpace(customerFieldsToFindDTO.Name)) 
+                predicate = predicate.And(x => EF.Functions.Like(x.Name, customerFieldsToFindDTO.Name));
+
+            if (!string.IsNullOrWhiteSpace(customerFieldsToFindDTO.Address))
+                predicate = predicate.And(x => EF.Functions.Like(x.Address, customerFieldsToFindDTO.Address));
+
+            if (!string.IsNullOrWhiteSpace(customerFieldsToFindDTO.Email))
+                predicate = predicate.And(x => EF.Functions.Like(x.Email, customerFieldsToFindDTO.Email));
+
+            if (Converters.ToInt32(customerFieldsToFindDTO?.Phone) != 0)
+                predicate = predicate
+                    .And(x 
+                        => EF.Functions.Like(x.Phone.ToString(), 
+                        customerFieldsToFindDTO.Phone.ToString()
+                    ));
+            
+            if (!string.IsNullOrWhiteSpace(customerFieldsToFindDTO.City))
+                predicate = predicate.And(x => EF.Functions.Like(x.City, customerFieldsToFindDTO.City));
+            
+            return await this._context.Customers
+                .Where(predicate)
+                .ToListAsync();
         }
 
         public async Task RemoveAsync(CustomerFilterDTO customerFilterDTO)

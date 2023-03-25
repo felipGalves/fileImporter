@@ -9,6 +9,7 @@ namespace fileImporter.Interfaces
     public interface ICustomerRepository<Customer>
     {
         Task<List<Customer>> GetAllAsync();
+        Task<List<Customer>> GetAllAsync(CustomerFieldsToFindDTO customerFieldsToFindDTO);
         Task<List<Customer>> FindAsync();
         Task<Customer> UpdateAsync();
         Task<Customer> SaveAsync(CustomerDTO customer); 

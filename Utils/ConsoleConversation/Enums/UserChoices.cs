@@ -6,17 +6,19 @@ namespace fileImporter.Utils.ConsoleConversation.Enums
     {
         [Description("Customer Listing")]
         CustomerListing = 1,
+        [Description("Filter Customers")]
+        FilterCustomers = 2,
         [Description("Register New Customer")]
-        RegisterNewCustomer = 2,
+        RegisterNewCustomer = 3,
         [Description("Import Customers")]
-        ImportCustomers = 3,
+        ImportCustomers = 4,
         [Description("Export Customers")]
-        ExportCustomers = 4,
+        ExportCustomers = 5,
         [Description("Delete Customer")]
-        DeleteCustomer = 5,
+        DeleteCustomer = 6,
         [Description("Delete All Customers")]
-        DeleteAllCustomers = 6,
+        DeleteAllCustomers = 7,
         [Description("Clear History")]
-        ClearHistory = 7
+        ClearHistory = 8,
     }
 }

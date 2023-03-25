@@ -27,6 +27,10 @@ namespace fileImporter.Utils
             return descriptions.ToArray();
         }
 
+        public static IEnumerable<T> GetValues<T>() 
+            => Enum.GetValues(typeof(T)).Cast<T>();
+        
+
         public static T GetValueFromDescription<T>(string description) where T : Enum
         {
             foreach(var field in typeof(T).GetFields())

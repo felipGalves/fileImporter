@@ -48,7 +48,10 @@ namespace fileImporter.Utils.ConsoleConversation
             switch (this._userChoice)
             {
                 case UserChoices.CustomerListing:
-                    CustomerListing();
+                    await CustomerListing();
+                    break;
+                case UserChoices.FilterCustomers:
+                    await FilterCustomers();
                     break;
                 case UserChoices.RegisterNewCustomer:
                     await RegisterNewCustomer();
@@ -69,6 +72,39 @@ namespace fileImporter.Utils.ConsoleConversation
                     ClearHistory();
                     break;
             }
+        }
+
+        private async Task FilterCustomers()
+        {
+            var rule = new Rule("[red]Select The Fields To Be Filtered[/]");
+            rule.LeftJustified();
+            AnsiConsole.Write(rule);
+
+            var fieldsToFilter = AnsiConsole.Prompt(
+                new MultiSelectionPrompt<string>()
+                    .PageSize(10)
+                    .InstructionsText(
+                        "[grey](Press [blue]<space>[/] to toggle a fruit, " +
+                        "[green]<enter>[/] to accept)[/]")
+                    .AddChoices(Converters.GetDescriptionsFromEnum<CustomerFieldsToFind>())
+                ).Select(x => Converters.GetValueFromDescription<CustomerFieldsToFind>(x)).ToList();
+
+            CustomerFieldsToFindDTO customerDTO = new CustomerFieldsToFindDTO();
+
+            foreach (var item in fieldsToFilter)
+            {
+                switch (item)
+                {
+                    case CustomerFieldsToFind.FindByID:
+                        customerDTO.ID = Converters.ToInt32(AnsiConsole.Ask<string>("[green]ID[/]:"));
+                        break;
+                    case CustomerFieldsToFind.FindByName:
+                        customerDTO.Name = AnsiConsole.Ask<string>("[green]ID[/]:");
+                        break;
+                }
+            }
+
+            await CustomerListing(null, await this._customer.GetAllAsync(customerDTO));
         }
 
         private async Task ExportCustomers()
@@ -116,7 +152,7 @@ namespace fileImporter.Utils.ConsoleConversation
 
                 AnsiConsole.Write(panel);
 
-                CustomerListing();
+                await CustomerListing();
             }
         }
 
@@ -145,8 +181,6 @@ namespace fileImporter.Utils.ConsoleConversation
                     customerFilterDTO.Name = AnsiConsole.Ask<string>("[green]Name[/]:");
                     break;
             }
-
-
         }
 
         private void ClearHistory()
@@ -176,12 +210,12 @@ namespace fileImporter.Utils.ConsoleConversation
             }
         }
 
-        private void CustomerListing(int? customerID = null)
+        private async Task CustomerListing(int? customerID = null, List<Customer> customersList = null)
         {
-            var customers = this._customer
-                .GetAllAsync()
-                .GetAwaiter()
-                .GetResult();
+            var customers = 
+                (customersList == null) 
+                    ? await this._customer.GetAllAsync() 
+                    : customersList;
 
             this.BuildTable(customers, customerID);
         }
@@ -260,7 +294,7 @@ namespace fileImporter.Utils.ConsoleConversation
 
             AnsiConsole.Write(panel);
 
-            CustomerListing(customer?.ID);
+            await CustomerListing(customer?.ID);
         }
 
         private string BuildTableCell(string valor, string colorStr = null)

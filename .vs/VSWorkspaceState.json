@@ -2,11 +2,13 @@
   "ExpandedNodes": [
     "",
     "\\Data",
+    "\\Error",
     "\\Interfaces",
+    "\\Repositories",
     "\\Utils",
     "\\Utils\\ConsoleConversation",
     "\\Utils\\FileImporter"
   ],
-  "SelectedNode": "\\Interfaces\\ICustomerRepository.cs",
+  "SelectedNode": "\\Utils\\ConsoleConversation\\ConsoleConversation.cs",
   "PreviewInSolutionExplorer": false
 }
